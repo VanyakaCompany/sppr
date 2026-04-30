@@ -1,0 +1,10 @@
+{
+  "method": 2,
+  "options_count": 2,
+  "conditions_count": 3,
+  "q": [0.2, 0.3, 0.5],
+  "matrix": [
+    [1, 2, 3],
+    [4, 5, 6]
+  ]
+}

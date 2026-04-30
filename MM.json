@@ -1,0 +1,9 @@
+{
+  "method": 1,
+  "options_count": 2,
+  "conditions_count": 3,
+  "matrix": [
+    [1, 2, 3],
+    [4, 5, 6]
+  ]
+}
