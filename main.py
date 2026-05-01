@@ -104,6 +104,34 @@ def parse_args():
     return parser.parse_args()
 
 
+def MM_simplify(matrix):
+    """
+    Определение наихудшего исхода для каждой альтернативы (строки)
+    Args:
+        matrix: матрица оценок
+    Returns:
+        Массив минимальных значений для каждой строки
+    """
+    return [min(matrix[i]) for i in range(len(matrix))]
+
+
+def BL_simplify(matrix, q):
+    """
+    Вычисление математического ожидания (средневзвешенной суммы) для каждой альтернативы (строки) с учетом вероятностей
+    Args:
+        matrix: матрица оценок
+        q: массив вероятностей для каждого состояния (столбца)
+    Returns:
+        Массив математических ожиданий для каждой строки
+    """
+    result = []
+
+    for i in range(len(matrix)):
+        result.append(sum([matrix[i][j] * q[j] for j in range(len(matrix[i]))]))
+
+    return result
+
+
 def main():
     args = parse_args()
 
@@ -116,16 +144,27 @@ def main():
         return
 
     print(f"Метод: {['MM', 'BL'][method - 1]}")
-    print(f"Кол-во вариантов: {options_count}")
-    print(f"Кол-во условий: {conditions_count}")
-    if method == 2:
-        print("Вероятности событий: ", q)
-    print("Матрица исходных данных: ", matrix)
-
+    print("Исходные данные:")
     rows = [f"E{to_subscript(i + 1)}" for i in range(options_count)]
     headers = [f"F{to_subscript(i + 1)}{f" ({q[i]})" if i < len(q) else ""}" for i in range(conditions_count)]
     table = [[row_name] + row for row_name, row in zip(rows, matrix)]
     print(tabulate(table, headers=headers, tablefmt="grid"))
+
+    simplified_matrix = MM_simplify(matrix) if method == 1 else BL_simplify(matrix, q)
+    simplified_matrix_max = max(simplified_matrix)
+
+    print("\nПроизводим свёртку:")
+    headers += [f"F{to_subscript('r')}"]
+    table = [row + [simplified] for row, simplified in zip(table, simplified_matrix)]
+    print(tabulate(table, headers=headers, tablefmt="grid"))
+
+    print(f"\nВыбираем лучшие варианты ({simplified_matrix_max}):")
+    Eo = [
+        f"E{to_subscript(i + 1)}"
+        for i in range(len(simplified_matrix))
+        if simplified_matrix[i] == simplified_matrix_max
+    ]
+    print(f"E{to_subscript('o')} = {{ {', '.join(Eo)} }}")
 
 
 if __name__ == "__main__":
