@@ -1,7 +1,7 @@
-from utils import to_subscript, get_valid_input
+from utils import parse_args, to_subscript, get_valid_input, format_float
 from tabulate import tabulate
-import argparse
 import json
+import math
 
 
 def parse_config(path):
@@ -23,7 +23,7 @@ def parse_config(path):
     missing = [field for field in required_fields if field not in data]
 
     if missing:
-        raise ValueError(f"В конфиге отсутствуют обязательные поля({', '.join(missing)})")
+        raise ValueError(f"В конфиге отсутствуют обязательные поля ({', '.join(missing)})")
 
     method = data["method"]
     options_count = data["options_count"]
@@ -56,15 +56,24 @@ def parse_config(path):
         if len(row) != conditions_count:
             raise ValueError("Размер строки матрицы не совпадает с количеством состояний")
 
-    return method, options_count, conditions_count, q, matrix
+    return method - 1, options_count, conditions_count, q, matrix
 
 
 def manual_input():
     """Ручной ввод данных"""
 
-    method = get_valid_input("1) MM\n2) BL\nВыберете метод: ", int, lambda x: x in [1, 2])
-    options_count = get_valid_input("Введите кол-во вариантов: ", int, lambda x: x > 0)
-    conditions_count = get_valid_input("Введите кол-во условий: ", int, lambda x: x > 0)
+    method = get_valid_input(
+        "1) MM\n2) BL\nВыберете метод: ",
+        int,
+        lambda x: x in [1, 2],
+        "Выберите один из предложенных вариантов!",
+    )
+    options_count = get_valid_input(
+        "Введите кол-во вариантов: ", int, lambda x: x > 0, "Введите целое положительное число!"
+    )
+    conditions_count = get_valid_input(
+        "Введите кол-во условий: ", int, lambda x: x > 0, "Введите целое положительное число!"
+    )
 
     q = []
     if method == 2:
@@ -72,8 +81,10 @@ def manual_input():
             print("Заполните вероятности событий")
             for i in range(conditions_count):
                 prompt = f"q{to_subscript(i + 1)}: "
-                q.append(get_valid_input(prompt, float, lambda x: x >= 0 and x <= 1))
-            if abs(sum(q) - 1.0) < 1e-9:
+                q.append(
+                    get_valid_input(prompt, float, lambda x: x >= 0 and x <= 1, "Введите число от 0 до 1")
+                )
+            if math.isclose(sum(q), 1, rel_tol=1e-9):
                 break
             else:
                 print("Сумма вероятностей всех событий должна равняться единице!")
@@ -84,24 +95,12 @@ def manual_input():
     for i in range(options_count):
         matrix.append([])
         for j in range(conditions_count):
-            prompt = f"e{to_subscript(str(i) + str(j))}: "
-            matrix[i].append(get_valid_input(prompt, float))
+            prompt = f"e{to_subscript(str(i + 1) + str(j + 1))}: "
+            matrix[i].append(get_valid_input(prompt, float, error_message="Введите число!"))
 
     print()
 
-    return method, options_count, conditions_count, q, matrix
-
-
-def parse_args():
-    """Формирование подсказки и парсинг параметров вызова"""
-    parser = argparse.ArgumentParser(
-        description="Программа поддержки принятия решений, на основе алгоритмов многокритериальных методов.",
-        epilog="Пример: python main.py --config config.json",
-        add_help=False,
-    )
-    parser.add_argument("-h", "--help", action="help", help="Показать эту справку и выйти")
-    parser.add_argument("--config", type=str, help="Путь к JSON конфигу")
-    return parser.parse_args()
+    return method - 1, options_count, conditions_count, q, matrix
 
 
 def MM_simplify(matrix):
@@ -143,26 +142,43 @@ def main():
         print(f"Ошибка загрузки конфига: {e}")
         return
 
-    print(f"Метод: {['MM', 'BL'][method - 1]}")
+    FORMULAS = [
+        {  # MM
+            "e_ir": f"e{to_subscript('ir')} = min e{to_subscript('ij')}",
+            "z": f"Z{to_subscript('MM')} = max e{to_subscript('ir')}",
+            "E_o": f"E{to_subscript('o')} = {{ E{to_subscript('io')} | E{to_subscript('io')} ∈ E ∧ e{to_subscript('io')} = Z{to_subscript('MM')} }}",
+        },
+        {  # BL
+            "e_ir": f"e{to_subscript('ir')} = Σ e{to_subscript('ij')} * q{to_subscript('j')}",
+            "z": f"Z{to_subscript('BL')} = max e{to_subscript('ir')}",
+            "E_o": f"E{to_subscript('o')} = {{ E{to_subscript('io')} | E{to_subscript('io')} ∈ E ∧ e{to_subscript('io')} = Z{to_subscript('BL')} ∧ Σ q{to_subscript('j')} = 1 }}",
+        },
+    ]
+
+    print(f"Метод: {["MM", "BL"][method]}")
     print("Исходные данные:")
     rows = [f"E{to_subscript(i + 1)}" for i in range(options_count)]
     headers = [f"F{to_subscript(i + 1)}{f" ({q[i]})" if i < len(q) else ""}" for i in range(conditions_count)]
     table = [[row_name] + row for row_name, row in zip(rows, matrix)]
     print(tabulate(table, headers=headers, tablefmt="grid"))
 
-    simplified_matrix = MM_simplify(matrix) if method == 1 else BL_simplify(matrix, q)
+    simplified_matrix = MM_simplify(matrix) if method == 0 else BL_simplify(matrix, q)
     simplified_matrix_max = max(simplified_matrix)
 
-    print("\nПроизводим свёртку:")
+    print(f"\nУпрощаем многокритериальную матрицу ({FORMULAS[method]["e_ir"]}):")
     headers += [f"F{to_subscript('r')}"]
     table = [row + [simplified] for row, simplified in zip(table, simplified_matrix)]
     print(tabulate(table, headers=headers, tablefmt="grid"))
 
-    print(f"\nВыбираем лучшие варианты ({simplified_matrix_max}):")
+    print(
+        f"\nПрименям к столбцу F{to_subscript('r')} оценочную ф-ю метода:\n{FORMULAS[method]['z']} = {format_float(simplified_matrix_max)}"
+    )
+
+    print(f"\nВыбираем оптимальные варианты ({FORMULAS[method]['E_o']}):")
     Eo = [
         f"E{to_subscript(i + 1)}"
         for i in range(len(simplified_matrix))
-        if simplified_matrix[i] == simplified_matrix_max
+        if math.isclose(simplified_matrix[i], simplified_matrix_max, rel_tol=1e-9)
     ]
     print(f"E{to_subscript('o')} = {{ {', '.join(Eo)} }}")
 

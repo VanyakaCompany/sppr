@@ -1,3 +1,18 @@
+import argparse
+
+
+def parse_args():
+    """Формирование подсказки и парсинг параметров вызова"""
+    parser = argparse.ArgumentParser(
+        description="Программа поддержки принятия решений, на основе алгоритмов многокритериальных методов.",
+        epilog="Пример: python main.py --config config.json",
+        add_help=False,
+    )
+    parser.add_argument("-h", "--help", action="help", help="Показать эту справку и выйти")
+    parser.add_argument("--config", type=str, help="Путь к JSON конфигу")
+    return parser.parse_args()
+
+
 def to_subscript(text):
     """
     Перевод в нижний индекс
@@ -78,3 +93,18 @@ def get_valid_input(prompt, input_type=str, validator=None, error_message=None):
         except ValueError:
             if error_message:
                 print(error_message)
+
+
+def format_float(value):
+    """
+    Форматирует результат, убирая погрешности float
+
+    Args:
+        value: Вещественное число
+
+    Returns:
+        Строка с корректно округлённым числом
+    """
+    rounded = round(value, 10) # Округляем до 10-12 знаков (достаточно для любых расчетов)
+    result = f"{rounded}".rstrip('0').rstrip('.') # Преобразуем в строку и убираем лишние нули
+    return result
