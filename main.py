@@ -162,17 +162,15 @@ def main():
     table = [[row_name] + row for row_name, row in zip(rows, matrix)]
     print(tabulate(table, headers=headers, tablefmt="grid"))
 
-    Fr = MM_simplify(matrix) if method == 0 else BL_simplify(matrix, q)
-    Z = max(Fr)
-
     print(f"\nУпрощаем многокритериальную матрицу ({FORMULAS[method]["e_ir"]}):")
+    Fr = MM_simplify(matrix) if method == 0 else BL_simplify(matrix, q)
     headers += [f"F{to_subscript('r')}"]
     table = [row + [e_ir] for row, e_ir in zip(table, Fr)]
     print(tabulate(table, headers=headers, tablefmt="grid"))
 
-    print(
-        f"\nПрименям к столбцу F{to_subscript('r')} оценочную ф-ю метода:\n{FORMULAS[method]['z']} = {format_float(Z)}"
-    )
+    print(f"\nПрименям к столбцу F{to_subscript('r')} оценочную ф-ю метода:")
+    Z = max(Fr)
+    print(f"{FORMULAS[method]['z']} = {format_float(Z)}")
 
     print(f"\nВыбираем оптимальные варианты ({FORMULAS[method]['E_o']}):")
     Eo = [f"E{to_subscript(i + 1)}" for i in range(len(Fr)) if math.isclose(Fr[i], Z, rel_tol=1e-9)]
