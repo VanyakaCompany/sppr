@@ -18,10 +18,8 @@ def parse_args():
 def to_subscript(text):
     """
     Перевод в нижний индекс
-
     Args:
         text: произвольный текст
-
     Returns:
         Полученный текст в нижнем индексе или через нижнее подчёркивание (если хоть один символ не получилось перевести в нижний индекс)
     """
@@ -74,13 +72,11 @@ def to_subscript(text):
 def get_valid_input(prompt, input_type=str, validator=None, error_message=None):
     """
     Общий метод для ввода данных с валидацией
-
     Args:
         prompt: Текст приглашения для ввода
         input_type: Тип данных для преобразования (int, float)
         validator: Функция-валидатор, которая принимает значение и возвращает bool
         error_message: Сообщение об ошибке
-
     Returns:
         Введенное и валидированное значение
     """
@@ -100,10 +96,8 @@ def get_valid_input(prompt, input_type=str, validator=None, error_message=None):
 def format_float(value):
     """
     Форматирует результат, убирая погрешности float
-
     Args:
         value: Вещественное число
-
     Returns:
         Строка с корректно округлённым числом
     """
@@ -112,12 +106,13 @@ def format_float(value):
     return result
 
 
-def save_json(data, path):
+def save_json(data, path, indent=2):
     """
     Сохранение JSON данных в файл
     Args:
         data: JSON данные
         path: путь для сохранения
+        indent: отступ
     """
     with open(path, "w", encoding="utf-8") as file:
-        json.dump(data, file, ensure_ascii=False, indent=2)
+        json.dump(data, file, ensure_ascii=False, indent=indent)
