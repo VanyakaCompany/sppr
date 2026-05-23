@@ -82,7 +82,7 @@ def get_valid_input(prompt, input_type=str, validator=None, error_message=None):
     """
     while True:
         try:
-            value = input_type(input(prompt))
+            value = input_type(input(prompt).strip())
 
             if validator is None or validator(value):
                 return value
