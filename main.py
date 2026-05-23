@@ -1,4 +1,4 @@
-from utils import parse_args, to_subscript, get_valid_input, format_float
+from utils import parse_args, to_subscript, get_valid_input, format_float, save_json
 from tabulate import tabulate
 import json
 import math
@@ -136,7 +136,7 @@ def main():
 
     try:
         method, options_count, conditions_count, q, matrix = (
-            parse_config(args.config) if args.config else manual_input()
+            parse_config(args.input) if args.input else manual_input()
         )
     except Exception as e:
         print(f"Ошибка загрузки конфига: {e}")
@@ -162,25 +162,34 @@ def main():
     table = [[row_name] + row for row_name, row in zip(rows, matrix)]
     print(tabulate(table, headers=headers, tablefmt="grid"))
 
-    simplified_matrix = MM_simplify(matrix) if method == 0 else BL_simplify(matrix, q)
-    simplified_matrix_max = max(simplified_matrix)
+    Fr = MM_simplify(matrix) if method == 0 else BL_simplify(matrix, q)
+    Z = max(Fr)
 
     print(f"\nУпрощаем многокритериальную матрицу ({FORMULAS[method]["e_ir"]}):")
     headers += [f"F{to_subscript('r')}"]
-    table = [row + [simplified] for row, simplified in zip(table, simplified_matrix)]
+    table = [row + [e_ir] for row, e_ir in zip(table, Fr)]
     print(tabulate(table, headers=headers, tablefmt="grid"))
 
     print(
-        f"\nПрименям к столбцу F{to_subscript('r')} оценочную ф-ю метода:\n{FORMULAS[method]['z']} = {format_float(simplified_matrix_max)}"
+        f"\nПрименям к столбцу F{to_subscript('r')} оценочную ф-ю метода:\n{FORMULAS[method]['z']} = {format_float(Z)}"
     )
 
     print(f"\nВыбираем оптимальные варианты ({FORMULAS[method]['E_o']}):")
-    Eo = [
-        f"E{to_subscript(i + 1)}"
-        for i in range(len(simplified_matrix))
-        if math.isclose(simplified_matrix[i], simplified_matrix_max, rel_tol=1e-9)
-    ]
+    Eo = [f"E{to_subscript(i + 1)}" for i in range(len(Fr)) if math.isclose(Fr[i], Z, rel_tol=1e-9)]
     print(f"E{to_subscript('o')} = {{ {', '.join(Eo)} }}")
+
+    if args.output:
+        data = {
+            "method": method + 1,
+            "options_count": options_count,
+            "conditions_count": conditions_count,
+            "q": q,
+            "matrix": matrix,
+            "F_r": Fr,
+            "Z": Z,
+            "Eo": Eo,
+        }
+        save_json(data, args.output)
 
 
 if __name__ == "__main__":

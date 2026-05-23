@@ -1,4 +1,5 @@
 import argparse
+import json
 
 
 def parse_args():
@@ -9,7 +10,8 @@ def parse_args():
         add_help=False,
     )
     parser.add_argument("-h", "--help", action="help", help="Показать эту справку и выйти")
-    parser.add_argument("--config", type=str, help="Путь к JSON конфигу")
+    parser.add_argument("-i", "--input", type=str, help="Путь к файлу с входными данными (JSON)")
+    parser.add_argument("-o", "--output", type=str, help="Путь к файлу для сохранения результата (JSON)")
     return parser.parse_args()
 
 
@@ -105,6 +107,17 @@ def format_float(value):
     Returns:
         Строка с корректно округлённым числом
     """
-    rounded = round(value, 10) # Округляем до 10-12 знаков (достаточно для любых расчетов)
-    result = f"{rounded}".rstrip('0').rstrip('.') # Преобразуем в строку и убираем лишние нули
+    rounded = round(value, 10)  # Округляем до 10-12 знаков (достаточно для любых расчетов)
+    result = f"{rounded}".rstrip("0").rstrip(".")  # Преобразуем в строку и убираем лишние нули
     return result
+
+
+def save_json(data, path):
+    """
+    Сохранение JSON данных в файл
+    Args:
+        data: JSON данные
+        path: путь для сохранения
+    """
+    with open(path, "w", encoding="utf-8") as file:
+        json.dump(data, file, ensure_ascii=False, indent=2)
